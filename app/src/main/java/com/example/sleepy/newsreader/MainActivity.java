@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter arrayAdapter;
     Intent intent;
 
+    //BackgroundTask Class
     public class BackgroundTask extends AsyncTask<String, Void, String>{
 
         @Override
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
                 InputStream inputStream = connection.getInputStream();
                 InputStreamReader reader = new InputStreamReader(inputStream);
 
+                //Get IDs from hacker rank
                 int data = reader.read();
                 while(data!=-1){
                     char current = (char) data;
@@ -55,12 +57,14 @@ public class MainActivity extends AppCompatActivity {
                     data = reader.read();
                 }
 
-                /****************Second Part****************/
+                //Take the IDS and put it into a JSONArray
                 JSONArray idJsonArray = new JSONArray(idResult);
                 //Log.i("test",idJsonArray.toString());
 
+                //Go Through idJsonArray
                 for(int j=0; j<idJsonArray.length(); j++){
                     String jsonWebResult = "";
+
                     url = new URL("https://hacker-news.firebaseio.com/v0/item/"+idJsonArray.get(j).toString()+".json?print=pretty");
                     //Log.i("json site info","https://hacker-news.firebaseio.com/v0/item/"+idJsonArray.get(j).toString()+".json?print=pretty");
                     connection = (HttpURLConnection) url.openConnection();
@@ -73,18 +77,17 @@ public class MainActivity extends AppCompatActivity {
                         jsonWebResult += current;
                         data = reader.read();
                     }
-
+                    //Create a JSONObject from Hacker-Rank API
+                    //If the JSON data has a title and url, they are added to the list
                     //Log.i(Integer.toString(j), jsonWebResult);
                     JSONObject jsonObject = new JSONObject(jsonWebResult);
                     if(!jsonObject.isNull("title") && !jsonObject.isNull("url")){
                         Log.i("url",jsonObject.getString("url"));
                         Log.i("title",jsonObject.getString("title"));
-
                         newsList.add(jsonObject.getString("title"));
                         urlList.add(jsonObject.getString("url"));
                     }
                 }
-
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -99,30 +102,33 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
+            //Update the ArrayAdapter
             arrayAdapter.notifyDataSetChanged();
         }
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         intent = new Intent(this,Main2Activity.class);
-        SQLiteDatabase database = this.openOrCreateDatabase("News", MODE_PRIVATE, null);
 
-
+        //Initialization of ArrayList, ListView,  ArrayAdapter
         urlList = new ArrayList<String>();
         newsList = new ArrayList<String>();
         newsListView = (ListView) findViewById(R.id.newsListView);
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, newsList);
+        //Set the adapter to to the ListView
         newsListView.setAdapter(arrayAdapter);
 
+        //Set the Item Click Listener for the ListView
         newsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Toast.makeText(MainActivity.this, newsList.get(i), Toast.LENGTH_SHORT).show();
+                //Send URL to be accessed in other activity
                 intent.putExtra("url", urlList.get(i));
+                //Switch to second activity
                 startActivity(intent);
             }
         });
@@ -135,8 +141,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        //Initialize and Execute Task
         BackgroundTask task = new BackgroundTask();
         try{
+            //Using Hacker-News API to get a list of IDs for their sites
             task.execute("https://hacker-news.firebaseio.com/v0/newstories.json?print=pretty");
         }catch(Exception e){
             e.printStackTrace();
